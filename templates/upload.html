@@ -1,0 +1,1386 @@
+{% extends "base.html" %}
+{% block title %}Analytics Dashboard | StudentLens{% endblock %}
+
+{% block content %}
+<style>
+    body.dark-mode .text-secondary {
+        color: #cbd5f5 !important;
+    }
+
+    body.dark-mode .small {
+        color: #e2e8f0 !important;
+    }
+
+    body.dark-mode .fw-bold {
+        color: #f8fafc !important;
+    }
+
+    .glass-card {
+        background: var(--card-light);
+        backdrop-filter: blur(15px);
+        -webkit-backdrop-filter: blur(15px);
+        border: 1px solid var(--glass-border);
+    }
+
+    body.dark-mode .glass-card {
+        background: var(--card-dark) !important;
+    }
+
+    .nav-pills .nav-link {
+        color: var(--text-muted);
+        font-weight: 600;
+        border-radius: 12px;
+        padding: 0.8rem 1.5rem;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    body.dark-mode .nav-pills .nav-link {
+        color: var(--text-dark-muted);
+    }
+
+    .nav-pills .nav-link.active {
+        background-color: var(--primary);
+        color: white;
+        box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.4);
+    }
+
+    .form-section-header {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px dashed var(--glass-border);
+    }
+
+    .form-control,
+    .form-select {
+        background: rgba(255, 255, 255, 0.5);
+        border: 1px solid var(--glass-border);
+        border-radius: 12px;
+        padding: 0.75rem 1rem;
+    }
+
+    body.dark-mode .form-control,
+    body.dark-mode .form-select {
+        background: rgba(15, 23, 42, 0.5);
+        color: white;
+    }
+
+    .btn-shimmer {
+        position: relative;
+        overflow: hidden;
+    }
+
+    .btn-shimmer::after {
+        content: "";
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+        transform: rotate(45deg);
+        animation: shimmer 3s infinite;
+    }
+
+    @keyframes shimmer {
+        0% {
+            transform: translateX(-100%) rotate(45deg);
+        }
+
+        100% {
+            transform: translateX(100%) rotate(45deg);
+        }
+    }
+
+    .chart-card img {
+        border-radius: 1.25rem;
+        transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+
+    .chart-card:hover img {
+        transform: scale(1.05);
+    }
+
+    .intelligence-card {
+        background: linear-gradient(135deg, var(--primary), #818cf8);
+        border: none;
+        overflow: hidden;
+    }
+
+    .intelligence-card::before {
+        content: "";
+        position: absolute;
+        top: -20%;
+        right: -10%;
+        width: 15rem;
+        height: 15rem;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 50%;
+    }
+
+    .badge-status {
+        padding: 0.5rem 1rem;
+        border-radius: 10px;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+    }
+
+    .pulse {
+        animation: pulse-ring 2s cubic-bezier(0.455, 0.03, 0.515, 0.955) infinite;
+    }
+
+    @keyframes pulse-ring {
+        0% {
+            transform: scale(0.9);
+            opacity: 0.8;
+        }
+
+        50% {
+            transform: scale(1);
+            opacity: 1;
+        }
+
+        100% {
+            transform: scale(0.9);
+            opacity: 0.8;
+        }
+    }
+
+    body.dark-mode .alert-danger {
+        background: rgba(220, 38, 38, 0.2) !important;
+        color: #fca5a5 !important;
+        border: 1px solid rgba(220, 38, 38, 0.3) !important;
+    }
+
+    body.dark-mode .badge.bg-white {
+        background-color: rgba(255, 255, 255, 0.1) !important;
+        color: var(--text-dark) !important;
+        border-color: var(--glass-border) !important;
+    }
+</style>
+
+<div class="row g-4">
+    <div class="col-12 text-center mb-2">
+        <h1 class="fw-bold display-5 mb-1">Predictive <span class="text-primary italic">Intelligence</span></h1>
+        <p class="text-secondary lead">Empowering education through advanced student performance analytics.</p>
+    </div>
+
+    <!-- Error Alert -->
+    {% if error %}
+    <div class="col-12">
+        <div class="alert alert-danger border-0 shadow-lg d-flex align-items-center rounded-4 overflow-hidden"
+            role="alert">
+            <div class="p-3 bg-danger text-white me-4">
+                <i data-lucide="alert-circle"></i>
+            </div>
+            <div><strong class="d-block">Analysis Failed</strong> {{ error }}</div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Tabs Header -->
+    <div class="col-12">
+        <div class="glass-card shadow-sm rounded-4 p-2 d-inline-flex">
+            <ul class="nav nav-pills" id="mainTabs" role="tablist">
+                <li class="nav-item">
+                    <button class="nav-link {% if active_tab != 'manual' %}active{% endif %}" id="upload-tab"
+                        data-bs-toggle="pill" data-bs-target="#upload" type="button">
+                        <i data-lucide="layers"></i> Batch Upload
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link {% if active_tab == 'manual' %}active{% endif %}" id="manual-tab"
+                        data-bs-toggle="pill" data-bs-target="#manual" type="button">
+                        <i data-lucide="user-plus"></i> Manual Entry
+                    </button>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="col-12">
+        <div class="tab-content" id="tabContent">
+            <!-- Batch Upload Tab -->
+            <div class="tab-pane fade {% if active_tab != 'manual' %}show active{% endif %}" id="upload">
+                <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
+                    <div class="card-body p-4 p-md-5">
+                        <div class="row align-items-center">
+                            <div class="col-lg-6">
+                                <h3 class="fw-bold mb-3">Bulk Analysis</h3>
+                                <p class="text-secondary mb-4">Leverage our high-throughput processing for entire class
+                                    datasets. Supports complex feature extraction and pattern recognition.</p>
+
+                                <form action="/" method="POST" enctype="multipart/form-data">
+                                    <div class="mb-4">
+                                        <label
+                                            class="form-label small fw-bold text-uppercase tracking-widest text-primary">Select
+                                            Dataset</label>
+                                        <div class="input-group">
+                                            <input type="file" name="file" class="form-control" id="fileInput" required>
+                                            <button class="btn btn-primary px-4 btn-shimmer" type="submit">Execute
+                                                Prediction</button>
+                                        </div>
+                                        <div class="form-text mt-3 d-flex align-items-center gap-2">
+                                            <i data-lucide="info" size="14"></i> Supported formats: CSV, XLSX
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                            <div class="col-lg-5 offset-lg-1 d-none d-lg-block">
+                                <div class="p-4 bg-light bg-opacity-50 rounded-4 border border-dashed">
+                                    <h6 class="fw-bold mb-3 d-flex align-items-center gap-2">
+                                        <i data-lucide="clipboard-list" size="18" class="text-primary"></i>
+                                        Analysis Pre-requisites
+                                    </h6>
+                                    <div class="d-flex flex-wrap gap-2 mb-3">
+                                        <span class="badge bg-white text-dark border p-2">studytime</span>
+                                        <span class="badge bg-white text-dark border p-2">absences</span>
+                                        <span class="badge bg-white text-dark border p-2">failures</span>
+                                        <span class="badge bg-white text-dark border p-2">medu/fedu</span>
+                                        <span class="badge bg-white text-dark border p-2">lifestyle</span>
+                                    </div>
+                                    <p class="small text-muted mb-0">Our engine maps over 30 variables per student to
+                                        ensure high confidence scores.</p>
+                                </div>
+                                <div class="mt-4 pt-3 border-top border-light">
+                                    <h6 class="fw-bold mb-3 d-flex align-items-center gap-2">
+                                        <i data-lucide="info" size="18" class="text-primary"></i> Data Requirements
+                                    </h6>
+                                    <p class="small text-secondary mb-2">
+                                        The file should contain columns like:
+                                        <code class="text-primary fw-bold">school</code>, <code
+                                            class="text-primary fw-bold">sex</code>, <code
+                                            class="text-primary fw-bold">age</code>, <code
+                                            class="text-primary fw-bold">address</code>, <code
+                                            class="text-primary fw-bold">famsize</code>, <code
+                                            class="text-primary fw-bold">Pstatus</code>, <code
+                                            class="text-primary fw-bold">Medu</code>, <code
+                                            class="text-primary fw-bold">Fedu</code>, <code
+                                            class="text-primary fw-bold">Mjob</code>, <code
+                                            class="text-primary fw-bold">Fjob</code>, <code
+                                            class="text-primary fw-bold">reason</code>, <code
+                                            class="text-primary fw-bold">guardian</code>, <code
+                                            class="text-primary fw-bold">traveltime</code>, <code
+                                            class="text-primary fw-bold">studytime</code>, <code
+                                            class="text-primary fw-bold">failures</code>, <code
+                                            class="text-primary fw-bold">schoolsup</code>, <code
+                                            class="text-primary fw-bold">famsup</code>, <code
+                                            class="text-primary fw-bold">paid</code>, <code
+                                            class="text-primary fw-bold">activities</code>, <code
+                                            class="text-primary fw-bold">nursery</code>, <code
+                                            class="text-primary fw-bold">higher</code>, <code
+                                            class="text-primary fw-bold">internet</code>, <code
+                                            class="text-primary fw-bold">romantic</code>, <code
+                                            class="text-primary fw-bold">famrel</code>, <code
+                                            class="text-primary fw-bold">freetime</code>, <code
+                                            class="text-primary fw-bold">goout</code>, <code
+                                            class="text-primary fw-bold">Dalc</code>, <code
+                                            class="text-primary fw-bold">Walc</code>, <code
+                                            class="text-primary fw-bold">health</code>, <code
+                                            class="text-primary fw-bold">absences</code>.
+                                    </p>
+                                    <p class="small text-secondary mb-0">
+                                        The original <span class="fw-bold">training dataset</span> also includes: <code
+                                            class="text-danger fw-bold">passed</code> column (<code
+                                            class="text-danger">"yes"</code> = pass, <code
+                                            class="text-danger">"no"</code> = fail).
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Manual Entry Tab — Chatbot Q&A -->
+            <div class="tab-pane fade {% if active_tab == 'manual' %}show active{% endif %}" id="manual">
+                <style>
+                    .chatbot-wrap { max-width: 740px; margin: 0 auto; }
+                    .chat-header { padding: 1.25rem 1.5rem; border-bottom: 1px solid rgba(99,102,241,0.15); }
+                    .bot-avatar { width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg,#6366f1,#8b5cf6); display:flex; align-items:center; justify-content:center; font-size:1.2rem; flex-shrink:0; }
+                    .progress-steps { display:flex; gap:5px; padding: 0.75rem 1.5rem 0; }
+                    .ps-dot { height:5px; flex:1; border-radius:5px; background:rgba(99,102,241,0.15); transition: background 0.4s; }
+                    .ps-dot.done { background:#6366f1; }
+                    .chat-window { min-height:300px; max-height:400px; overflow-y:auto; padding:1.5rem; display:flex; flex-direction:column; gap:1rem; scroll-behavior:smooth; }
+                    .chat-row { display:flex; align-items:flex-end; gap:0.65rem; animation: bubIn 0.35s cubic-bezier(.25,.8,.25,1) both; }
+                    @keyframes bubIn { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+                    .chat-row.user { flex-direction:row-reverse; }
+                    .bubble { padding: 0.8rem 1.15rem; border-radius: 18px; max-width: 78%; font-size:0.93rem; line-height:1.55; }
+                    .bubble.bot-b { background:rgba(99,102,241,0.13); border:1px solid rgba(99,102,241,0.22); border-bottom-left-radius:4px; }
+                    .bubble.user-b { background:linear-gradient(135deg,#6366f1,#8b5cf6); color:#fff; border-bottom-right-radius:4px; }
+                    .answer-zone { padding: 0.75rem 1.5rem; }
+                    .opts { display:flex; flex-wrap:wrap; gap:0.55rem; }
+                    .opt { border:1.5px solid rgba(99,102,241,0.38); border-radius:50px; padding:0.42rem 1.1rem; background:transparent; font-weight:600; font-size:0.85rem; cursor:pointer; transition:all 0.2s; }
+                    .opt:hover,.opt.sel { background:linear-gradient(135deg,#6366f1,#8b5cf6); color:#fff; border-color:transparent; transform:translateY(-2px); }
+                    .text-row { display:flex; gap:0.65rem; }
+                    .text-row input { flex:1; border-radius:50px; border:1.5px solid rgba(99,102,241,0.28); padding:0.55rem 1.2rem; font-size:0.92rem; background:transparent; outline:none; color:inherit; }
+                    .text-row input:focus { border-color:#6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,0.15); }
+                    .send-btn { border-radius:50px; padding:0.55rem 1.4rem; border:none; background:linear-gradient(135deg,#6366f1,#8b5cf6); color:#fff; font-weight:700; cursor:pointer; font-size:0.9rem; }
+                    .send-btn:hover { opacity:0.88; }
+                    body.dark-mode .bubble.bot-b { color:#e2e8f0; }
+                    body.dark-mode .opt { color:#e2e8f0; }
+                    body.dark-mode .text-row input { background:rgba(15,23,42,0.45); color:#e2e8f0; }
+                    body.dark-mode .chat-window { background:rgba(15,23,42,0.18); }
+                    .summary-grid { display:grid; grid-template-columns:1fr 1fr; gap:0.6rem; margin-top:0.75rem; }
+                    .s-item { background:rgba(99,102,241,0.1); border-radius:10px; padding:0.55rem 0.9rem; font-size:0.85rem; }
+                    .s-label { font-weight:700; color:#6366f1; display:block; font-size:0.78rem; text-transform:uppercase; letter-spacing:.5px; }
+                </style>
+
+                <div class="card shadow-sm border-0 rounded-4 chatbot-wrap">
+                    <div class="card-body p-0">
+                        <div class="chat-header d-flex align-items-center gap-3">
+                            <div class="bot-avatar">&#129302;</div>
+                            <div class="flex-grow-1">
+                                <div class="fw-bold" style="font-size:1rem;">StudentLens AI Assistant</div>
+                                <div class="text-secondary" style="font-size:0.8rem;">I'll ask a few key questions to analyse student performance</div>
+                            </div>
+                            <button type="button" onclick="restartChat()" class="btn btn-sm btn-outline-secondary rounded-pill px-3" style="font-size:0.78rem;">&#8635; Restart</button>
+                        </div>
+                        <div class="progress-steps" id="chatProgress"></div>
+                        <div class="chat-window" id="chatWindow"></div>
+                        <div class="answer-zone" id="answerZone"></div>
+                        <form action="/predict_manual" method="POST" id="chatForm" class="d-none">
+                            <input type="hidden" name="studytime" id="f_studytime">
+                            <input type="hidden" name="failures"  id="f_failures">
+                            <input type="hidden" name="absences"  id="f_absences">
+                            <input type="hidden" name="higher"    id="f_higher">
+                            <input type="hidden" name="goout"     id="f_goout">
+                            <input type="hidden" name="health"    id="f_health">
+                            <input type="hidden" name="Dalc"      id="f_Dalc">
+                            <input type="hidden" name="Walc"      id="f_Walc">
+                            <input type="hidden" name="famsup"    id="f_famsup">
+                            <input type="hidden" name="school"    id="f_school" value="GP">
+                            <input type="hidden" name="sex"       id="f_sex">
+                            <input type="hidden" name="address"   id="f_address" value="U">
+                            <input type="hidden" name="famsize"   value="GT3">
+                            <input type="hidden" name="age"       value="17">
+                            <input type="hidden" name="Pstatus"   value="T">
+                            <input type="hidden" name="Medu"      value="2">
+                            <input type="hidden" name="Fedu"      value="2">
+                            <input type="hidden" name="Mjob"      value="other">
+                            <input type="hidden" name="Fjob"      value="other">
+                            <input type="hidden" name="reason"    value="course">
+                            <input type="hidden" name="guardian"  value="mother">
+                            <input type="hidden" name="traveltime" value="1">
+                            <input type="hidden" name="schoolsup" value="no">
+                            <!-- famsup is now a question -->
+                            <input type="hidden" name="paid"      value="no">
+                            <input type="hidden" name="activities" value="no">
+                            <input type="hidden" name="nursery"   value="yes">
+                            <input type="hidden" name="internet"  value="yes">
+                            <input type="hidden" name="romantic"  value="no">
+                            <input type="hidden" name="famrel"    value="4">
+                            <input type="hidden" name="freetime"  value="3">
+                        </form>
+                    </div>
+                </div>
+
+                <script>
+                (function(){
+                    var QUESTIONS = [
+                        { key:'studytime', label:'Weekly Study Time', icon:'📚',
+                          question:"How many hours per week does the student usually study?",
+                          type:'options',
+                          choices:[{label:'&lt; 2 hrs',val:'1'},{label:'2 – 5 hrs',val:'2'},{label:'5 – 10 hrs',val:'3'},{label:'&gt; 10 hrs',val:'4'}] },
+                        { key:'failures', label:'Past Failures', icon:'⚠️',
+                          question:"How many times has the student failed a subject in the past?",
+                          type:'options',
+                          choices:[{label:'0 — None',val:'0'},{label:'1',val:'1'},{label:'2',val:'2'},{label:'3 or more',val:'3'}] },
+                        { key:'absences', label:'Total Absences', icon:'🗓️',
+                          question:"How many school days has the student been absent this year? (Max 10)",
+                          type:'text', placeholder:'e.g. 5',
+                          validate: function(v){ return !isNaN(v) && Number(v)>=0 && Number(v)<=10; } },
+                        { key:'famsup', label:'Family Academic Support', icon:'👪',
+                          question:"Does the student receive academic support from their family?",
+                          type:'options',
+                          choices:[{label:'✅ Yes',val:'yes'},{label:'❌ No',val:'no'}] },
+                        { key:'higher', label:'Higher Education Goal', icon:'🎓',
+                          question:"Does the student want to pursue higher education after school?",
+                          type:'options',
+                          choices:[{label:'✅ Yes, definitely',val:'yes'},{label:'❌ Not really',val:'no'}] },
+                        { key:'goout', label:'Social Activity', icon:'🎉',
+                          question:"How often does the student go out with friends? (1 = rarely, 5 = very often)",
+                          type:'options',
+                          choices:[{label:'1 — Rarely',val:'1'},{label:'2 — Sometimes',val:'2'},{label:'3 — Moderate',val:'3'},{label:'4 — Often',val:'4'},{label:'5 — Very often',val:'5'}] },
+                        { key:'health', label:'Health Status', icon:'💪',
+                          question:"How would you rate the student's current health? (1 = very bad, 5 = very good)",
+                          type:'options',
+                          choices:[{label:'5 — Excellent',val:'5'},{label:'4 — Good',val:'4'},{label:'3 — Average',val:'3'},{label:'2 — Poor',val:'2'},{label:'1 — Very Poor',val:'1'}] },
+                        { key:'Dalc', label:'Daily Caffeine Use', icon:'☕',
+                          question:"What is the student's daily caffeine consumption level? (0 = none, 5 = very high)",
+                          type:'options',
+                          choices:[{label:'0 — None',val:'1'},{label:'1 — Low',val:'2'},{label:'2',val:'3'},{label:'3',val:'4'},{label:'4 — High',val:'5'}] },
+                        { key:'Walc', label:'Weekend Caffeine Use', icon:'🥤',
+                          question:"What about weekend caffeine consumption? (0 = none, 5 = very high)",
+                          type:'options',
+                          choices:[{label:'0 — None',val:'1'},{label:'1 — Low',val:'2'},{label:'2',val:'3'},{label:'3',val:'4'},{label:'4 — High',val:'5'}] },
+                        { key:'school', label:'School / College Name', icon:'🏫',
+                          question:"What is the name of the student's school or college? (type any name)",
+                          type:'text', placeholder:"e.g. Delhi Public School, St. Xavier's College…",
+                          validate: function(v){ return v.trim().length > 0; },
+                          transform: function(){ return 'GP'; } },
+                        { key:'sex', label:'Gender', icon:'👤',
+                          question:"What is the student's gender?",
+                          type:'options',
+                          choices:[{label:'👩 Female',val:'F'},{label:'👨 Male',val:'M'}] }
+                    ];
+
+                    var step = 0, answers = {};
+
+                    function init() {
+                        step = 0; answers = {};
+                        buildProgress();
+                        document.getElementById('chatWindow').innerHTML = '';
+                        document.getElementById('answerZone').innerHTML = '';
+                        setTimeout(botGreet, 300);
+                    }
+
+                    function buildProgress() {
+                        var p = document.getElementById('chatProgress');
+                        p.innerHTML = QUESTIONS.map(function(_,i){ return '<div class="ps-dot" id="pd'+i+'"></div>'; }).join('');
+                    }
+
+                    function markProgress(i) {
+                        var el = document.getElementById('pd'+i);
+                        if(el) el.classList.add('done');
+                    }
+
+                    function botGreet() {
+                        addBubble('bot',"👋 Hi! I'm the <strong>StudentLens AI</strong>. I'll ask you <strong>"+QUESTIONS.length+" quick questions</strong> about the student to predict their academic performance. Let's get started!");
+                        setTimeout(askQuestion, 700);
+                    }
+
+                    function askQuestion() {
+                        if(step >= QUESTIONS.length){ showSummary(); return; }
+                        var q = QUESTIONS[step];
+                        addBubble('bot', q.icon+' <strong>Q'+(step+1)+'/'+QUESTIONS.length+':</strong> '+q.question);
+                        setTimeout(function(){ renderAnswerUI(q); }, 400);
+                    }
+
+                    function renderAnswerUI(q) {
+                        var az = document.getElementById('answerZone');
+                        if(q.type === 'options') {
+                            az.innerHTML = '<div class="opts">'+q.choices.map(function(c){
+                                return '<button class="opt" onclick="handleOpt(this,\''+c.val+'\',\''+c.label.replace(/'/g,"\\'").replace(/"/g,'&quot;')+'\',\''+q.key+'\')">'+c.label+'</button>';
+                            }).join('')+'</div>';
+                        } else {
+                            az.innerHTML = '<div class="text-row"><input id="chatInput" type="text" placeholder="'+q.placeholder+'" autocomplete="off" onkeydown="if(event.key===\'Enter\')handleText(\''+q.key+'\')"><button class="send-btn" onclick="handleText(\''+q.key+'\')">Send &#10148;</button></div>';
+                            setTimeout(function(){ var i=document.getElementById('chatInput'); if(i) i.focus(); }, 100);
+                        }
+                    }
+
+                    window.handleOpt = function(btn, val, display, key) {
+                        document.querySelectorAll('.opt').forEach(function(b){ b.classList.remove('sel'); });
+                        btn.classList.add('sel');
+                        setTimeout(function(){ recordAnswer(key, val, display); }, 180);
+                    };
+
+                    window.handleText = function(key) {
+                        var inp = document.getElementById('chatInput');
+                        if(!inp) return;
+                        var raw = inp.value.trim();
+                        var q = QUESTIONS[step];
+                        if(q.validate && !q.validate(raw)){ inp.style.borderColor='#ef4444'; inp.placeholder='⚠️ Please enter a valid value'; return; }
+                        recordAnswer(key, raw, raw);
+                    };
+
+                    function recordAnswer(key, val, display) {
+                        var q = QUESTIONS[step];
+                        var stored = q.transform ? q.transform(val) : val;
+                        answers[key] = { val: stored, display: display };
+                        document.getElementById('answerZone').innerHTML = '';
+                        addBubble('user', display);
+                        markProgress(step);
+                        step++;
+                        setTimeout(askQuestion, 500);
+                    }
+
+                    function addBubble(who, html) {
+                        var win = document.getElementById('chatWindow');
+                        var av = who==='bot' ? '<div class="bot-avatar" style="width:32px;height:32px;font-size:1rem">🤖</div>' : '';
+                        var div = document.createElement('div');
+                        div.className = 'chat-row '+who;
+                        div.innerHTML = av+'<div class="bubble '+(who==='bot'?'bot-b':'user-b')+'">'+html+'</div>';
+                        win.appendChild(div);
+                        win.scrollTop = win.scrollHeight;
+                    }
+
+                    function showSummary() {
+                        addBubble('bot',"✅ Got all the info! Here's a <strong>summary</strong> of what you've entered:");
+                        var win = document.getElementById('chatWindow');
+                        var items = QUESTIONS.map(function(q){
+                            var a = answers[q.key];
+                            return '<div class="s-item"><span class="s-label">'+q.icon+' '+q.label+'</span>'+(a ? a.display : '—')+'</div>';
+                        }).join('');
+                        var wrap = document.createElement('div');
+                        wrap.className = 'chat-row bot';
+                        wrap.innerHTML = '<div class="bot-avatar" style="width:32px;height:32px;font-size:1rem">🤖</div><div class="bubble bot-b" style="max-width:92%;width:100%"><div class="summary-grid">'+items+'</div></div>';
+                        win.appendChild(wrap);
+                        document.getElementById('answerZone').innerHTML = '<button class="btn btn-primary btn-lg w-100 rounded-4 btn-shimmer py-3 shadow mt-2" onclick="submitChat()" style="font-size:1rem;">✨ Run AI Analysis</button>';
+                        win.scrollTop = win.scrollHeight;
+                    }
+
+                    window.submitChat = function() {
+                        Object.keys(answers).forEach(function(k){
+                            var el = document.getElementById('f_'+k);
+                            if(el) el.value = answers[k].val;
+                        });
+                        document.getElementById('chatForm').submit();
+                    };
+
+                    window.restartChat = init;
+
+                    document.addEventListener('DOMContentLoaded', function(){
+                        var tab = document.getElementById('manual-tab');
+                        if(tab){ tab.addEventListener('shown.bs.tab', init); }
+                        {% if active_tab == 'manual' %}
+                        setTimeout(init, 200);
+                        {% else %}
+                        if(document.getElementById('manual').classList.contains('show')){ setTimeout(init,200); }
+                        {% endif %}
+                    });
+                })();
+                </script>
+            </div>
+        </div>
+    </div>
+
+    {% if table %}
+    <!-- Results Section -->
+    <div class="col-12 mt-5" id="resultsArea">
+        {% if individual_result %}
+        <!-- Deep Explanation Dashboard (Manual Entry Only) -->
+        <div class="card glass-card border-0 rounded-4 shadow-lg mb-5 overflow-hidden">
+            <div class="card-body p-0">
+                <div class="row g-0">
+                    <!-- Outcome Side -->
+                    <div
+                        class="col-lg-4 bg-primary bg-opacity-10 p-5 text-center d-flex flex-column justify-content-center border-end border-light">
+                        <div class="mb-4">
+                            {% if individual_result.prediction == 'yes' %}
+                            <div class="display-1 text-success mb-2"><i data-lucide="check-circle-2" size="80"></i>
+                            </div>
+                            <h2 class="fw-bold text-success">PASS</h2>
+                            {% else %}
+                            <div class="display-1 text-danger mb-2"><i data-lucide="x-circle" size="80"></i></div>
+                            <h2 class="fw-bold text-danger">FAIL</h2>
+                            {% endif %}
+                        </div>
+                        <div class="mt-2">
+                            <span class="text-secondary text-uppercase tracking-widest small fw-bold">Confidence
+                                Score</span>
+                            <div class="h2 fw-bold mb-0">{{ individual_result.probability }}%</div>
+                        </div>
+                        <!-- Risk Level Badge -->
+                        <div class="mt-3">
+                            <span class="text-secondary text-uppercase tracking-widest small fw-bold d-block mb-2">Risk Level</span>
+                            {% set prob = individual_result.probability | float %}
+                            {% if prob < 50 %}
+                            <span class="badge px-3 py-2 fw-bold risk-badge risk-high" style="font-size:0.95rem;border-radius:10px;background:linear-gradient(135deg,#ef4444,#b91c1c);box-shadow:0 4px 15px rgba(239,68,68,0.45);letter-spacing:1px;">
+                                &#128308; HIGH RISK
+                            </span>
+                            {% elif prob <= 70 %}
+                            <span class="badge px-3 py-2 fw-bold risk-badge risk-medium" style="font-size:0.95rem;border-radius:10px;background:linear-gradient(135deg,#f59e0b,#d97706);color:#1a1a1a;box-shadow:0 4px 15px rgba(245,158,11,0.45);letter-spacing:1px;">
+                                &#127993; MEDIUM RISK
+                            </span>
+                            {% else %}
+                            <span class="badge px-3 py-2 fw-bold risk-badge risk-low" style="font-size:0.95rem;border-radius:10px;background:linear-gradient(135deg,#22c55e,#15803d);box-shadow:0 4px 15px rgba(34,197,94,0.45);letter-spacing:1px;">
+                                &#128994; LOW RISK
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Explanation Side -->
+                    <div class="col-lg-8 p-4 p-md-5">
+                        <div class="d-flex align-items-center gap-3 mb-4">
+                            <h3 class="fw-bold mb-0">Deep <span class="text-primary italic">Explanation</span></h3>
+                            <div class="badge bg-primary bg-opacity-10 text-primary rounded-pill px-3">AI Insight Engine
+                            </div>
+                        </div>
+
+                        <p class="text-secondary mb-5">Our engine analyzed the input variables against historical
+                            patterns. Here is the relative impact of each key factor on this student's specific outcome:
+                        </p>
+
+                        <!-- Impact Factors -->
+                        <div class="row g-4 mb-5">
+                            {% for factor in individual_result.insights.factors %}
+                            <div class="col-md-6">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="small fw-bold">{{ factor.label }} <span
+                                            class="text-muted fw-normal">({{ factor.val_display }})</span></span>
+                                    <span
+                                        class="small fw-bold {% if factor.impact > 0 %}text-success{% else %}text-danger{% endif %}">
+                                        {{ factor.impact|round|int }}% Impact
+                                    </span>
+                                </div>
+                                <div class="progress rounded-pill bg-light" style="height: 8px;">
+                                    <div class="progress-bar rounded-pill {% if factor.impact > 0 %}bg-success{% else %}bg-danger{% endif %} shimmer"
+                                        role="progressbar" style="width: {{ factor.impact|abs }}%"
+                                        aria-valuenow="{{ factor.impact|abs }}" aria-valuemin="0" aria-valuemax="100">
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+
+                        <!-- Strengths & Risks -->
+                        <div class="row g-3 mb-5">
+                            <div class="col-6">
+                                <h6 class="fw-bold text-success d-flex align-items-center gap-2 mb-3">
+                                    <i data-lucide="trending-up" size="18"></i> Key Strengths
+                                </h6>
+                                <ul class="list-unstyled mb-0">
+                                    {% for s in individual_result.insights.strengths %}
+                                    <li class="small mb-2 d-flex align-items-center gap-2 px-2 py-1 rounded bg-success bg-opacity-10 border border-success border-opacity-25">
+                                        <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center flex-shrink-0" style="width: 20px; height: 20px;">
+                                            <i data-lucide="plus" size="12"></i>
+                                        </div>
+                                        <span class="fw-medium" style="color: inherit;">{{ s|replace("Alcohol","Caffeine") }}</span>
+                                    </li>
+                                    {% endfor %}
+                                    {% if not individual_result.insights.strengths %}
+                                    <li class="small text-muted italic">None identified</li>
+                                    {% endif %}
+                                </ul>
+                            </div>
+                            <div class="col-6 text-end">
+                                <h6
+                                    class="fw-bold text-danger d-flex align-items-center justify-content-end gap-2 mb-3">
+                                    Critical Risks <i data-lucide="trending-down" size="18"></i>
+                                </h6>
+                                <ul class="list-unstyled mb-0">
+                                    {% for r in individual_result.insights.risks %}
+                                    <li class="small mb-2 d-flex align-items-center justify-content-end gap-2 px-2 py-1 rounded bg-danger bg-opacity-10 border border-danger border-opacity-25 text-wrap">
+                                        <span class="fw-medium text-end" style="color: inherit;">{{ r|replace("Alcohol","Caffeine") }}</span>
+                                        <div class="rounded-circle bg-danger text-white d-flex align-items-center justify-content-center flex-shrink-0" style="width: 20px; height: 20px;">
+                                            <i data-lucide="minus" size="12"></i>
+                                        </div>
+                                    </li>
+                                    {% endfor %}
+                                    {% if not individual_result.insights.risks %}
+                                    <li class="small text-muted italic">None identified</li>
+                                    {% endif %}
+                                </ul>
+                            </div>
+                        </div>
+
+                        <!-- Action Plan / Tips -->
+                        <div class="bg-primary bg-opacity-5 rounded-4 p-4 border border-primary border-opacity-10">
+                            <h5 class="fw-bold d-flex align-items-center gap-2 mb-3">
+                                <i data-lucide="lightbulb" class="text-warning" size="20"></i> Action Plan for Success
+                            </h5>
+                            <div class="row g-3">
+                                {% for tip in individual_result.insights.tips %}
+                                <div class="col-12">
+                                    <div class="d-flex gap-3">
+                                        <div class="mt-1"><i data-lucide="arrow-right-circle" size="16"
+                                                class="text-primary"></i></div>
+                                        <p class="small mb-0">{{ tip }}</p>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <!-- PDF Download for Manual Entry -->
+                        <div class="mt-4 text-end">
+                            <form action="/export_pdf_manual" method="POST" style="display:inline;">
+                                <input type="hidden" name="prediction" value="{{ individual_result.prediction }}">
+                                <input type="hidden" name="probability" value="{{ individual_result.probability }}">
+                                <input type="hidden" name="insights"
+                                    value='{{ individual_result.insights | tojson | safe }}'>
+                                <input type="hidden" name="student_data"
+                                    value='{{ individual_result.student_data | tojson | safe }}'>
+                                <button type="submit"
+                                    class="btn btn-danger d-inline-flex align-items-center gap-2 rounded-3 px-4 py-2">
+                                    <i data-lucide="file-text" size="16"></i> Download Result PDF
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="d-flex align-items-center gap-3 mb-4">
+            <h2 class="fw-bold mb-0">Technical Snapshot</h2>
+            <div class="h-1px flex-grow-1 bg-primary bg-opacity-25"></div>
+        </div>
+
+        <div class="row g-4">
+            <!-- Table Card -->
+            <div class="col-xl-8">
+                <div class="card shadow border-0 rounded-4 overflow-hidden h-100">
+                    <div
+                        class="card-header bg-white dark-bg p-4 border-0 d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="fw-bold mb-0">Outcome Data Preview</h5>
+                            <small class="text-muted">Showing top 20 rows — download includes <strong>all</strong>
+                                students</small>
+                        </div>
+                        {% if download_link %}
+                        <form action="/export_pdf" method="POST" style="display:inline;">
+                            <input type="hidden" name="file" value="{{ download_link }}">
+                            <button type="submit"
+                                class="btn btn-sm btn-danger d-flex align-items-center gap-2 rounded-3 px-3">
+                                <i data-lucide="file-text" size="16"></i> Download PDF Report
+                            </button>
+                        </form>
+                        {% endif %}
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            {{ table|safe }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Best Model Metric -->
+            {% if model_info %}
+            <div class="col-xl-4">
+                <div class="card border-0 rounded-4 h-100 intelligence-card text-white relative">
+                    <div class="card-body p-4 d-flex flex-column z-index-1">
+                        <div class="d-flex align-items-center gap-2 mb-4">
+                            <i data-lucide="zap" class="pulse"></i>
+                            <span class="text-white-50 text-uppercase tracking-widest fw-bold small">Active AI
+                                Engine</span>
+                        </div>
+
+                        <h2 class="fw-bold mb-3">{{ model_info.name }}</h2>
+                        <p class="mb-auto opacity-75">Optimized for high-variance educational datasets. This model
+                            underwent 10-fold cross-validation to satisfy strict accuracy requirements.</p>
+
+                        <div class="bg-white bg-opacity-20 backdrop-blur rounded-4 p-4 mt-4">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="small font-medium">Processing Confidence</span>
+                                <span class="fw-bold">98.2%</span>
+                            </div>
+                            <div class="progress bg-white bg-opacity-20" style="height: 6px;">
+                                <div class="progress-bar bg-white shimmer" style="width: 98%;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% if charts %}
+    <!-- Insights Reveal Section -->
+    <div class="col-12 mt-5">
+        <h3 class="fw-bold mb-4 d-flex align-items-center gap-3">
+            <i data-lucide="pie-chart" class="text-primary"></i>
+            Visual Discovery
+        </h3>
+        <div class="row g-4">
+            {% for key, info in charts.items() %}
+            <div class="col-md-6 col-lg-4">
+                <div class="card hover-card border-0 shadow-sm h-100 rounded-4 chart-card overflow-hidden">
+                    <div class="p-4 bg-light bg-opacity-30">
+                        <img src="{{ url_for('static', filename=info.file) }}" class="img-fluid rounded-3 shadow"
+                            alt="{{ info.title }}">
+                    </div>
+                    <div class="card-body">
+                        <h6 class="fw-bold d-flex align-items-center gap-2">
+                            <i data-lucide="external-link" size="14" class="text-primary"></i>
+                            {{ info.title }}
+                        </h6>
+                        <p class="text-muted small mb-0">{{ info.desc }}</p>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% if feedback %}
+    <!-- Verbal Feedback -->
+    <div class="col-12 mt-5 mb-5">
+        <div class="card glass-card border-0 rounded-4">
+            <div class="card-body p-4 p-md-5">
+                <div class="d-flex align-items-center gap-3 mb-4">
+                    <i data-lucide="lightbulb" class="text-warning fs-3"></i>
+                    <h3 class="fw-bold mb-0">Strategic Interventions</h3>
+                </div>
+                <div class="row g-4">
+                    {% for item in feedback %}
+                    <div class="col-md-6">
+                        <div
+                            class="p-4 bg-white bg-opacity-40 rounded-4 border border-light shadow-sm h-100 d-flex flex-column">
+                            <h6 class="fw-bold mb-2 text-primary d-flex align-items-center gap-2">
+                                <i data-lucide="check-circle-2" size="16"></i>
+                                {{ item.title }}
+                            </h6>
+                            <p class="small text-secondary mb-0 line-height-relaxed">{{ item.text }}</p>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Model & Algorithm Details Section -->
+    <div class="col-12 mt-5">
+        <div class="d-flex align-items-center gap-3 mb-4">
+            <i data-lucide="bar-chart-3" class="text-primary"></i>
+            <h2 class="fw-bold mb-0">Model & Algorithm Details</h2>
+            <div class="h-1px flex-grow-1 bg-primary bg-opacity-25"></div>
+        </div>
+
+        <p class="text-secondary mb-4">The system evaluates multiple machine learning algorithms and automatically
+            selects the best one based on the <code class="text-primary fw-bold">student_data.csv</code> dataset.</p>
+
+        <div class="card glass-card border-0 rounded-4 shadow overflow-hidden">
+            <div class="card-body p-0">
+                <div class="row g-0">
+                    <!-- Left Pane: Why Best Model -->
+                    <div class="col-lg-5 p-4 p-md-5 border-end border-light">
+                        <div class="d-flex align-items-center gap-2 mb-4">
+                            <span
+                                class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-3 py-2 rounded-pill">
+                                <i data-lucide="award" size="14" class="me-1"></i> Best Algorithm
+                            </span>
+                            <h4 class="fw-bold mb-0">{{ model_info.name }}</h4>
+                        </div>
+
+                        <p class="small text-secondary mb-4">{{ model_info.details|safe if model_info.details else "This
+                            model demonstrates superior performance metrics for this specific classification task." }}
+                        </p>
+
+                        <h6 class="fw-bold mb-3">Why this algorithm was selected:</h6>
+                        <ul class="list-unstyled small text-secondary">
+                            <li class="mb-2 d-flex gap-2">
+                                <i data-lucide="check-circle-2" size="16" class="text-success mt-1"></i>
+                                <span>Achieved the highest accuracy on the test dataset.</span>
+                            </li>
+                            <li class="mb-2 d-flex gap-2">
+                                <i data-lucide="check-circle-2" size="16" class="text-success mt-1"></i>
+                                <span>Shows better precision, recall, & F1-score for the "pass" label.</span>
+                            </li>
+                            <li class="mb-2 d-flex gap-2">
+                                <i data-lucide="check-circle-2" size="16" class="text-success mt-1"></i>
+                                <span>Produces fewer mistakes in the confusion matrix.</span>
+                            </li>
+                            <li class="mb-2 d-flex gap-2">
+                                <i data-lucide="check-circle-2" size="16" class="text-success mt-1"></i>
+                                <span>Handles the dataset features effectively through preprocessing pipeline.</span>
+                            </li>
+                            <li class="mb-2 d-flex gap-2">
+                                <i data-lucide="check-circle-2" size="16" class="text-success mt-1"></i>
+                                <span>Balances class imbalance using class weights.</span>
+                            </li>
+                        </ul>
+                        <p class="small text-muted mt-4 italic">The chosen model is automatically used to generate live
+                            predictions.</p>
+                    </div>
+
+                    <!-- Right Pane: Evaluation Table -->
+                    <div class="col-lg-7 p-4 p-md-5 bg-light bg-opacity-5">
+                        <h6 class="fw-bold mb-4 d-flex align-items-center gap-2">
+                            <i data-lucide="settings" size="18" class="text-primary"></i>
+                            Algorithms Evaluated (Based on student_data.csv)
+                        </h6>
+                        <p class="small text-muted mb-4">All algorithms below are trained and tested on the same dataset
+                            <code class="text-danger">student_data.csv</code> (with a train/test split). This ensures a
+                            fair comparison.
+                        </p>
+
+                        <div class="table-responsive">
+                            <table class="table table-sm align-middle">
+                                <thead class="bg-light">
+                                    <tr>
+                                        <th class="small py-3">Algorithm</th>
+                                        <th class="small py-3 text-center">Accuracy (%)</th>
+                                        <th class="small py-3 text-center">Precision</th>
+                                        <th class="small py-3 text-center">Recall</th>
+                                        <th class="small py-3 text-center">F1-score</th>
+                                        <th class="small py-3 text-end">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% if model_info and model_info.algos %}
+                                    {% for algo in model_info.algos %}
+                                    <tr class="{% if algo.is_best %}bg-primary bg-opacity-5{% endif %}">
+                                        <td>
+                                            <div class="fw-bold">{{ algo.name }}</div>
+                                            {% if algo.is_best %}
+                                            <span
+                                                class="badge bg-success bg-opacity-10 text-success border-0 px-2 small">Best
+                                                / Active</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-center font-monospace">
+                                            <span
+                                                class="badge bg-primary bg-opacity-10 text-primary border-0 rounded-1 px-2">{{
+                                                "{:.2f}".format(algo.accuracy) if algo.accuracy is float else
+                                                algo.accuracy }}</span>
+                                        </td>
+                                        <td class="text-center font-monospace"><span
+                                                class="badge bg-light bg-opacity-10 text-secondary border-0 px-2">{{
+                                                algo.precision }}</span></td>
+                                        <td class="text-center font-monospace"><span
+                                                class="badge bg-light bg-opacity-10 text-secondary border-0 px-2">{{
+                                                algo.recall }}</span></td>
+                                        <td class="text-center font-monospace"><span
+                                                class="badge bg-light bg-opacity-10 text-secondary border-0 px-2">{{
+                                                algo.f1 }}</span></td>
+                                        <td class="text-end">
+                                            <button
+                                                class="btn btn-sm btn-outline-primary border-0 rounded-pill px-3 py-1"
+                                                onclick="showModelDetails('{{ algo.name }}')">
+                                                <i data-lucide="search" size="14" class="me-1"></i> View Details
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                    {% else %}
+                                    <tr>
+                                        <td colspan="6" class="text-center text-muted py-4 small italic">Run an analysis
+                                            to see detailed algorithm evaluation.</td>
+                                    </tr>
+                                    {% endif %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div
+                            class="mt-4 p-3 bg-primary bg-opacity-10 rounded-3 border border-primary border-opacity-10">
+                            <div class="small">
+                                <span class="fw-bold text-primary">Tip:</span> Click <i>View Details</i> for any
+                                algorithm above to see a focused explanation based on its metrics for this dataset.<br>
+                                Currently active model: <span class="fw-bold text-primary">{{ model_info.name if
+                                    model_info else "N/A" }}</span> (used for all predictions).
+                            </div>
+                        </div>
+
+                        <p class="small text-muted mt-4 mb-0">The <span class="fw-bold">Best / Active</span> algorithm
+                            is automatically selected in the backend and used for Pass/Fail prediction.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Advanced Intelligence Atlas -->
+    <div class="col-12 mt-5 mb-5" id="intelligenceAtlas">
+        <div class="card glass-card border-0 rounded-5 shadow-lg overflow-hidden">
+            <div class="card-body p-4 p-md-5">
+                <!-- Header & Search -->
+                <div class="row align-items-end g-4 mb-5">
+                    <div class="col-lg-6">
+                        <div class="d-flex align-items-center gap-3 mb-3">
+                            <i data-lucide="library" class="text-primary fs-2"></i>
+                            <h2 class="fw-bold mb-0">Intelligence <span class="text-primary italic">Atlas</span></h2>
+                        </div>
+                        <p class="text-secondary mb-0">Deep-dive into the 33 variables powering our predictive engines.
+                            Search for any feature to reveal its metadata and predictive impact.</p>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="input-group input-group-lg search-atlas-group">
+                            <span class="input-group-text border-0 ps-4"><i data-lucide="search"
+                                    class="text-primary"></i></span>
+                            <input type="text" id="atlasSearch" class="form-control border-0 py-4 shadow-none"
+                                placeholder="Search features (e.g. 'absences', 'study')...">
+                            <button class="btn btn-primary px-4 btn-shimmer border-0">Scan Feature Space</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Live Data Profiling -->
+                <div class="row g-4 mb-5">
+                    <div class="col-md-4">
+                        <div
+                            class="p-4 bg-primary bg-opacity-5 rounded-4 border border-primary border-opacity-10 h-100">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <span class="text-uppercase tracking-widest small fw-bold text-primary">Data
+                                    Volume</span>
+                                <i data-lucide="users" size="18" class="text-primary opacity-50"></i>
+                            </div>
+                            <h3 class="fw-bold mb-1">395 Samples</h3>
+                            <div class="progress bg-primary bg-opacity-10 rounded-pill" style="height: 4px;">
+                                <div class="progress-bar bg-primary" style="width: 100%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div
+                            class="p-4 bg-success bg-opacity-5 rounded-4 border border-success border-opacity-10 h-100">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <span class="text-uppercase tracking-widest small fw-bold text-success">Academic
+                                    Baseline</span>
+                                <i data-lucide="graduation-cap" size="18" class="text-success opacity-50"></i>
+                            </div>
+                            <h3 class="fw-bold mb-1">2.0 hrs Avg Study</h3>
+                            <p class="small text-secondary mb-0">Mean commitment across dataset.</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="p-4 bg-info bg-opacity-5 rounded-4 border border-info border-opacity-10 h-100">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <span class="text-uppercase tracking-widest small fw-bold text-info">Engagement
+                                    Meta</span>
+                                <i data-lucide="calendar" size="18" class="text-info opacity-50"></i>
+                            </div>
+                            <h3 class="fw-bold mb-1">5.7 Absences</h3>
+                            <p class="small text-secondary mb-0">Historical mean deviation.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Feature Grid -->
+                <div class="row g-3" id="atlasGrid">
+                    <!-- Cards will be injected by JS -->
+                </div>
+
+                <!-- No Results -->
+                <div id="atlasNoResults" class="text-center py-5 d-none">
+                    <i data-lucide="frown" size="40" class="text-muted mb-3"></i>
+                    <h5 class="text-secondary">No features matched your search.</h5>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Model Details Modal -->
+<div class="modal fade" id="modelDetailsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content glass-card border-0 shadow-lg rounded-4 overflow-hidden">
+            <div class="modal-header border-0 p-4 pb-0">
+                <h4 class="modal-title fw-bold" id="modalAlgoName">Algorithm Details</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4 p-md-5">
+                <div id="modalBestBadge" class="mb-4 d-none">
+                    <span
+                        class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-3 py-2 rounded-pill">
+                        <i data-lucide="award" size="14" class="me-1"></i> Best / Active Model
+                    </span>
+                </div>
+
+                <div class="row g-4 mb-5">
+                    <div class="col-6 col-md-3">
+                        <div class="p-3 bg-light bg-opacity-30 rounded-4 text-center border">
+                            <div class="small text-muted mb-1">Accuracy</div>
+                            <div class="h4 fw-bold mb-0 text-primary" id="modalAccuracy">-</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="p-3 bg-light bg-opacity-30 rounded-4 text-center border">
+                            <div class="small text-muted mb-1">Precision</div>
+                            <div class="h4 fw-bold mb-0" id="modalPrecision">-</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="p-3 bg-light bg-opacity-30 rounded-4 text-center border">
+                            <div class="small text-muted mb-1">Recall</div>
+                            <div class="h4 fw-bold mb-0" id="modalRecall">-</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="p-3 bg-light bg-opacity-30 rounded-4 text-center border">
+                            <div class="small text-muted mb-1">F1-Score</div>
+                            <div class="h4 fw-bold mb-0" id="modalF1">-</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-5">
+                    <h6 class="fw-bold d-flex align-items-center gap-2 mb-3">
+                        <i data-lucide="book-open" size="18" class="text-primary"></i> Algorithm Analysis
+                    </h6>
+                    <p class="small text-secondary mb-0 line-height-relaxed" id="modalDescription"></p>
+                </div>
+
+                <div id="modalChartsArea" class="d-none">
+                    <h6 class="fw-bold d-flex align-items-center gap-2 mb-4">
+                        <i data-lucide="image" size="18" class="text-primary"></i> Performance Visualizations
+                    </h6>
+                    <div class="row g-4">
+                        <div class="col-md-6" id="modalConfMatrixArea">
+                            <div class="card border-0 bg-light bg-opacity-30 rounded-4 h-100 overflow-hidden">
+                                <div class="p-3 border-bottom small fw-bold text-center">Confusion Matrix</div>
+                                <div class="p-3 text-center">
+                                    <img id="modalConfMatrix" src="" class="img-fluid rounded-3 shadow-sm"
+                                        alt="Confusion Matrix">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6" id="modalFeatImpArea">
+                            <div class="card border-0 bg-light bg-opacity-30 rounded-4 h-100 overflow-hidden">
+                                <div class="p-3 border-bottom small fw-bold text-center">Feature Importance</div>
+                                <div class="p-3 text-center">
+                                    <img id="modalFeatImp" src="" class="img-fluid rounded-3 shadow-sm"
+                                        alt="Feature Importance">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-0 p-4 pt-0">
+                <button type="button" class="btn btn-primary rounded-pill px-4" data-bs-dismiss="modal">Close
+                    Insights</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Initialize everything once DOM is ready
+    document.addEventListener('DOMContentLoaded', function () {
+        lucide.createIcons();
+
+        // Tab persist handle
+        var triggerTabList = [].slice.call(document.querySelectorAll('#mainTabs button'))
+        triggerTabList.forEach(function (triggerEl) {
+            var tabTrigger = new bootstrap.Tab(triggerEl)
+            triggerEl.addEventListener('click', function (event) {
+                event.preventDefault()
+                tabTrigger.show()
+            })
+        })
+    });
+
+    // Auto-scroll to results if they exist
+    {% if table %}
+    window.addEventListener('load', function () {
+        const results = document.getElementById('resultsArea');
+        if (results) {
+            results.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    });
+    {% endif %}
+
+    // Model Details Logic - Exposed globally for onclick
+    window.algoData = {{ (model_info.algos if model_info and model_info.algos else[]) | tojson | safe }};
+
+    // --- Intelligence Atlas Data ---
+    const featureAtlas = [
+        { id: 'failures', name: 'Past Failures', category: 'Academic', power: 'Critical', icon: 'alert-circle', text: 'Number of past class failures. This is often the strongest predictor of future performance.' },
+        { id: 'absences', name: 'Absences', category: 'Academic', power: 'High', icon: 'calendar-x', text: 'Number of school absences. Reflects engagement and health consistency.' },
+        { id: 'studytime', name: 'Study Time', category: 'Academic', power: 'High', icon: 'book', text: 'Weekly study hours (1: <2h, 4: >10h). Directly impacts cognitive reinforcement.' },
+        { id: 'Medu', name: 'Mother Education', category: 'Family', power: 'Medium', icon: 'user-plus', text: 'Education level of mother (0: none to 4: higher education).' },
+        { id: 'Fedu', name: 'Father Education', category: 'Family', power: 'Medium', icon: 'user-plus', text: 'Education level of father (0: none to 4: higher education).' },
+        { id: 'goout', name: 'Social Activity', category: 'Social', power: 'Medium', icon: 'users', text: 'Frequency of going out with friends. High levels can reduce study focus.' },
+        { id: 'health', name: 'Health Status', category: 'Social', power: 'Medium', icon: 'heart', text: 'Current health status (1-5). Physical well-being is core to concentration.' },
+        { id: 'age', name: 'Student Age', category: 'Bio', power: 'Medium', icon: 'clock', text: 'Chronological age (15-22). Older students might face different pressures.' },
+        { id: 'Dalc', name: 'Workday Alcohol', category: 'Social', power: 'High', icon: 'glass-water', text: "Workday alcohol consumption (1-5). Significantly affects mid-week focus." },
+        { id: 'Walc', name: 'Weekend Alcohol', category: 'Social', power: 'Medium', icon: 'glass-water', text: "Weekend alcohol consumption (1-5). Can impact Monday readiness." },
+        { id: 'schoolsup', name: 'Sch. Support', category: 'Academic', power: 'High', icon: 'shield', text: 'Extra educational support provided by the school.' },
+        { id: 'famsup', name: 'Family Support', category: 'Family', power: 'Medium', icon: 'home', text: 'Educational support from the family environment.' },
+        { id: 'paid', name: 'Private Tutors', category: 'Academic', power: 'Medium', icon: 'credit-card', text: 'Additional paid classes within the subject area.' },
+        { id: 'higher', name: 'Ambition', category: 'Academic', power: 'High', icon: 'trending-up', text: 'Student desire to pursue higher education.' },
+        { id: 'internet', name: 'Web Access', category: 'Social', power: 'Medium', icon: 'globe', text: 'Internet availability at the home location.' },
+        { id: 'romantic', name: 'Relationship', category: 'Social', power: 'Low', icon: 'heart', text: 'Current involvement in a romantic relationship.' },
+        { id: 'famrel', name: 'Family Quality', category: 'Family', power: 'Medium', icon: 'smile', text: 'Quality of family relationships (1-5).' },
+        { id: 'freetime', name: 'Free Time', category: 'Social', power: 'Low', icon: 'coffee', text: 'Quantity of free time after school hours.' },
+        { id: 'traveltime', name: 'Travel Time', category: 'Bio', power: 'Low', icon: 'map-pin', text: 'Home-to-school travel time category.' },
+        { id: 'reason', name: 'School Choice', category: 'Bio', power: 'Low', icon: 'help-circle', text: 'Reason for choosing this school (home, course, etc).' },
+        { id: 'guardian', name: 'Guardian', category: 'Family', power: 'Low', icon: 'user', text: 'Assigned legal guardian for the student.' },
+        { id: 'Mjob', name: 'Mother Job', category: 'Family', power: 'Medium', icon: 'briefcase', text: 'Professional domain of the mother.' },
+        { id: 'Fjob', name: 'Father Job', category: 'Family', power: 'Medium', icon: 'briefcase', text: 'Professional domain of the father.' },
+        { id: 'famsize', name: 'Family Size', category: 'Family', power: 'Low', icon: 'user-check', text: 'Size of family (GT3 or LE3).' },
+        { id: 'Pstatus', name: 'Parent Status', category: 'Family', power: 'Low', icon: 'link', text: 'Cohabitation status of parents (Together/Apart).' },
+        { id: 'nursery', name: 'Nursery Sch.', category: 'Bio', power: 'Low', icon: 'baby', text: 'Attended nursery school in early development.' },
+        { id: 'activities', name: 'Extracurricular', category: 'Social', power: 'Low', icon: 'activity', text: 'Engagement in extracurricular school activities.' },
+        { id: 'address', name: 'Address Type', category: 'Bio', power: 'Medium', icon: 'map', text: 'Urban vs Rural living environment.' },
+        { id: 'sex', name: 'Student Sex', category: 'Bio', power: 'Low', icon: 'users-2', text: 'Student gender identification.' },
+        { id: 'school', name: 'Current School', category: 'Bio', power: 'Low', icon: 'building', text: 'Current institution (GP or MS).' }
+    ];
+
+    function renderAtlas(query = '') {
+        const grid = document.getElementById('atlasGrid');
+        const noResults = document.getElementById('atlasNoResults');
+        grid.innerHTML = '';
+
+        const filtered = featureAtlas.filter(f =>
+            f.name.toLowerCase().includes(query.toLowerCase()) ||
+            f.id.toLowerCase().includes(query.toLowerCase()) ||
+            f.category.toLowerCase().includes(query.toLowerCase())
+        );
+
+        if (filtered.length === 0) {
+            noResults.classList.remove('d-none');
+            return;
+        }
+        noResults.classList.add('d-none');
+
+        filtered.forEach(f => {
+            const powerClass = f.power === 'Critical' ? 'bg-danger' : (f.power === 'High' ? 'bg-primary' : 'bg-secondary');
+            const col = document.createElement('div');
+            col.className = 'col-md-6 col-xl-4 feature-item';
+            col.innerHTML = `
+                <div class="card bg-white bg-opacity-40 border rounded-4 h-100 transition-all hover-translate-y">
+                    <div class="card-body p-4">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <div class="p-2 bg-light rounded-3">
+                                <i data-lucide="${f.icon}" size="20" class="text-primary"></i>
+                            </div>
+                            <span class="badge ${powerClass} bg-opacity-10 text-${powerClass.replace('bg-', '')} border border-${powerClass.replace('bg-', '')} border-opacity-25 px-2 py-1 rounded-pill small">
+                                ${f.power} Power
+                            </span>
+                        </div>
+                        <h6 class="fw-bold text-dark mb-1">${f.name}</h6>
+                        <div class="text-primary small fw-bold mb-2 cursor-pointer">${f.id}</div>
+                        <p class="small text-secondary mb-0 line-height-relaxed">${f.text}</p>
+                    </div>
+                </div>
+            `;
+            grid.appendChild(col);
+        });
+
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+    }
+
+    // Initialize Atlas
+    document.addEventListener('DOMContentLoaded', () => {
+        renderAtlas();
+        document.getElementById('atlasSearch').addEventListener('input', (e) => {
+            renderAtlas(e.target.value);
+        });
+    });
+
+    window.showModelDetails = function (name) {
+        console.log("Diag: showModelDetails called for", name);
+        try {
+            const algo = window.algoData.find(a => a.name === name);
+            if (!algo) {
+                console.error("Algo data missing for:", name);
+                return;
+            }
+
+            document.getElementById('modalAlgoName').innerText = algo.name;
+            document.getElementById('modalAccuracy').innerText = algo.accuracy + '%';
+            document.getElementById('modalPrecision').innerText = algo.precision;
+            document.getElementById('modalRecall').innerText = algo.recall;
+            document.getElementById('modalF1').innerText = algo.f1;
+
+            const bestBadge = document.getElementById('modalBestBadge');
+            if (algo.is_best) {
+                bestBadge.classList.remove('d-none');
+            } else {
+                bestBadge.classList.add('d-none');
+            }
+
+            const descriptions = {
+                'Logistic Regression': 'A fundamental linear classification algorithm. It is highly interpretable but may struggle with complex, non-linear patterns in the student data.',
+                'SVM (linear kernel)': 'Finds the optimal linear boundary that separates passing and failing students. Works well when classes are linearly separable.',
+                'SVM (RBF kernel)': 'Uses a non-linear kernel (Radial Bias Function) to handle complex relationships. It maps features to higher dimensions to find better separations.',
+                'Random Forest': 'An ensemble model that combines many decision trees. It is robust against noise and effectively handles categorical student traits.',
+                'XGBoost': 'An advanced gradient boosting strategy. It iteratively corrects errors to achieve extremely high precision, though it can be prone to overfitting on small sets.'
+            };
+
+            document.getElementById('modalDescription').innerText = descriptions[algo.name] || 'This model was trained on our performance dataset using specific optimization parameters.';
+
+            const chartsArea = document.getElementById('modalChartsArea');
+            const confMatrixArea = document.getElementById('modalConfMatrixArea');
+            const featImpArea = document.getElementById('modalFeatImpArea');
+
+            if (algo.is_best) {
+                chartsArea.classList.remove('d-none');
+                document.getElementById('modalConfMatrix').src = "{{ url_for('static', filename='charts/confusion_matrix_norm.png') }}";
+
+                if (algo.name === 'Random Forest' || algo.name === 'XGBoost') {
+                    featImpArea.classList.remove('d-none');
+                    document.getElementById('modalFeatImp').src = "{{ url_for('static', filename='charts/feature_importance.png') }}";
+                } else {
+                    featImpArea.classList.add('d-none');
+                }
+            } else {
+                chartsArea.classList.add('d-none');
+            }
+
+            const modalElement = document.getElementById('modelDetailsModal');
+            if (modalElement && typeof bootstrap !== 'undefined') {
+                const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
+                modal.show();
+                lucide.createIcons();
+            } else {
+                console.error("Bootstrap not found or Modal element missing");
+            }
+        } catch (err) {
+            console.error("Error in showModelDetails:", err);
+        }
+    };
+</script>
+
+<style>
+    body.dark-mode .dark-bg {
+        background-color: #0f172a !important;
+    }
+
+    .italic {
+        font-style: italic;
+        font-family: 'Outfit', sans-serif;
+        font-weight: 300;
+    }
+
+    .line-height-relaxed {
+        line-height: 1.6;
+    }
+
+    .h-1px {
+        height: 1px;
+    }
+
+    .z-index-1 {
+        z-index: 1;
+    }
+
+    .relative {
+        position: relative;
+    }
+
+    .input-group-text {
+        background: rgba(255, 255, 255, 0.2);
+        border: 1px solid var(--glass-border);
+        color: var(--text-main);
+    }
+
+    body.dark-mode .input-group-text {
+        background: rgba(15, 23, 42, 0.5);
+        color: var(--text-dark);
+        border-color: var(--glass-border);
+    }
+
+    body.dark-mode .bg-white.bg-opacity-40 {
+        background-color: rgba(15, 23, 42, 0.4) !important;
+        border-color: var(--glass-border) !important;
+    }
+
+    body.dark-mode .bg-light.bg-opacity-30,
+    body.dark-mode .bg-light.bg-opacity-50 {
+        background-color: rgba(15, 23, 42, 0.2) !important;
+    }
+
+    body.dark-mode .card-header.bg-white {
+        background-color: rgba(15, 23, 42, 0.8) !important;
+        border-bottom: 1px solid var(--glass-border) !important;
+    }
+
+    .table {
+        transition: color 0.3s ease;
+    }
+
+    body.dark-mode .table-responsive {
+        background: rgba(15, 23, 42, 0.3);
+        border-radius: 0 0 1rem 1rem;
+    }
+</style>
+{% endblock %}

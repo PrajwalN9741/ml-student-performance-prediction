@@ -1,0 +1,272 @@
+{% extends "base.html" %}
+
+{% block title %}Research Insights - StudentLens AI{% endblock %}
+
+{% block content %}
+<style>
+    /* Premium Research Styles */
+    :root {
+        --serif-font: 'Georgia', serif;
+        --sans-font: 'Outfit', 'Inter', sans-serif;
+    }
+
+    .research-container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 4rem 1.5rem;
+    }
+
+    .research-header {
+        text-align: center;
+        margin-bottom: 4rem;
+    }
+
+    .research-category {
+        text-transform: uppercase;
+        letter-spacing: 0.15em;
+        font-size: 0.85rem;
+        color: var(--primary);
+        font-weight: 700;
+        margin-bottom: 1rem;
+        display: block;
+    }
+
+    .research-title {
+        font-family: var(--serif-font);
+        font-size: 3.5rem;
+        font-weight: 700;
+        line-height: 1.1;
+        margin-bottom: 2rem;
+        letter-spacing: -0.02em;
+    }
+
+    .research-meta {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 1.5rem;
+        color: var(--text-muted);
+        font-size: 0.95rem;
+    }
+
+    .author-img {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        background: linear-gradient(45deg, var(--primary), var(--accent));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 700;
+    }
+
+    .hero-image-box {
+        width: 100vw;
+        position: relative;
+        left: 50%;
+        right: 50%;
+        margin-left: -50vw;
+        margin-right: -50vw;
+        margin-bottom: 4rem;
+        height: auto;
+        overflow: hidden;
+        border-radius: 0;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+    }
+
+    .hero-image-box img {
+        width: 100%;
+        height: auto;
+        display: block;
+    }
+
+    .research-content {
+        font-family: var(--serif-font);
+        font-size: 1.25rem;
+        line-height: 1.8;
+        color: var(--text-main);
+    }
+
+    body.dark-mode .research-content {
+        color: var(--text-dark);
+    }
+
+    .research-content p {
+        margin-bottom: 2rem;
+    }
+
+    .research-content h2 {
+        font-family: var(--sans-font);
+        font-size: 2.25rem;
+        font-weight: 700;
+        margin-top: 4rem;
+        margin-bottom: 1.5rem;
+        letter-spacing: -0.01em;
+    }
+
+    .research-content h3 {
+        font-family: var(--sans-font);
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin-top: 2.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .stat-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+        margin: 3rem 0;
+    }
+
+    .stat-card {
+        background: var(--card-light);
+        padding: 2rem;
+        border-radius: 1.5rem;
+        text-align: center;
+        border: 1px solid var(--glass-border);
+        transition: transform 0.3s ease;
+    }
+
+    body.dark-mode .stat-card {
+        background: var(--card-dark);
+    }
+
+    .stat-card:hover {
+        transform: translateY(-5px);
+    }
+
+    .stat-value {
+        font-family: var(--sans-font);
+        font-size: 2.5rem;
+        font-weight: 800;
+        color: var(--primary);
+        display: block;
+        margin-bottom: 0.5rem;
+    }
+
+    .stat-label {
+        font-family: var(--sans-font);
+        font-size: 0.9rem;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        font-weight: 600;
+    }
+
+    .quote-box {
+        border-left: 4px solid var(--primary);
+        padding: 1.5rem 2rem;
+        margin: 3rem 0;
+        background: rgba(99, 102, 241, 0.05);
+        font-style: italic;
+        font-size: 1.4rem;
+    }
+
+    @media (max-width: 768px) {
+        .research-title {
+            font-size: 2.5rem;
+        }
+
+        .hero-image-box {
+            height: auto;
+        }
+    }
+</style>
+
+<div class="research-container">
+    <header class="research-header">
+        <span class="research-category">Machine Learning & Education</span>
+        <h1 class="research-title">Intelligent Student Performance Prediction System: A Data-Driven Approach to Academic Success</h1>
+        <div class="research-meta">
+            <div class="author-img">PGV</div>
+            <div>
+                <span class="d-block fw-bold text-main dark-mode-text">Prajwal N, Girisha A, Varadaraju</span>
+                <span class="small">AI Research Team • 8 min read</span>
+            </div>
+        </div>
+    </header>
+</div>
+
+<div class="hero-image-box">
+    <img src="{{ url_for('static', filename='images/research_hero.png') }}" alt="AI Research Hero">
+</div>
+
+<div class="research-container py-0 pb-5">
+    <article class="research-content">
+        <p class="lead" style="font-size: 1.5rem; color: var(--text-muted);">
+            In the modern educational landscape, the ability to preemptively identify student academic risk is critical. This research presents an autonomous pipeline capable of predicting performance outcomes using social, demographic, and educational data.
+        </p>
+
+        <div class="quote-box">
+            "By analyzing the intersection of lifestyle and academics, we can move beyond reactive grading toward proactive pedagogical support."
+        </div>
+
+        <h2>Project Motivation</h2>
+        <p>
+            Educational institutions often struggle with identifying students who need extra support before it's too late. Our project, <strong>StudentLens AI</strong>, aims to bridge this gap by using Machine Learning to process complex behavioral datasets and provide educators with early-warning signals.
+        </p>
+
+        <h2>Research Methodology</h2>
+        <p>
+            The core of this system is built on a multi-dimensional feature space. We analyzed over 30 distinct parameters, categorized into three primary domains:
+        </p>
+        <ul>
+            <li><strong>Academic History:</strong> Past subject failures, study time, and attendance records.</li>
+            <li><strong>Social Factors:</strong> Family support (famsup), parental involvement (Medu/Fedu), and social high-risk behaviors (Dalc/Walc).</li>
+            <li><strong>Demographics:</strong> Age, school environment, and residential area (Urban vs. Rural).</li>
+        </ul>
+
+        <h3>Technical Pipeline</h3>
+        <p>
+            The raw data undergoes a rigorous transformation process. Categorical features like school type and gender are processed via <strong>One-Hot Encoding</strong>, while numeric features like absences and study time are passed through for statistical analysis. To address class imbalance common in educational data, we utilize <strong>Balanced Class Weighting</strong> to ensure the failure cases are not overlooked by the AI.
+        </p>
+
+        <div class="stat-grid">
+            <div class="stat-card">
+                <span class="stat-value">70.1%</span>
+                <span class="stat-label">System Accuracy</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-value">0.83</span>
+                <span class="stat-label">Detection Recall</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-value">30+</span>
+                <span class="stat-label">Features Analyzed</span>
+            </div>
+        </div>
+
+        <h2>Experimental Results</h2>
+        <p>
+            Our evaluation involved a "Model Tournament" where multiple supervised learning architectures competed for the highest cross-validation scores:
+        </p>
+        <ul>
+            <li><strong>SVM (RBF Kernel):</strong> Emerged as the most reliable predictor for complex social boundaries, achieving a 70.1% CV accuracy.</li>
+            <li><strong>XGBoost:</strong> Proved highly efficient in handling non-linear interactions between study habits and alcohol consumption.</li>
+            <li><strong>Random Forest:</strong> Provided the clearest <em>Feature Importance</em> rankings, confirming that <strong>Study Time</strong> and <strong>Absences</strong> are the primary indicators of risk.</li>
+        </ul>
+
+        <h2>Implementation & Impact</h2>
+        <p>
+            Unlike traditional research, this project is fully operationalized via a <strong>Flask Web Application</strong>. It features:
+        </p>
+        <ol>
+            <li><strong>SHAP Explainability:</strong> Leveraging SHapley Additive exPlanations to tell teachers exactly <em>why</em> a student is at risk.</li>
+            <li><strong>Interactive Chatbot:</strong> A step-by-step assessment tool that collects data through natural conversation.</li>
+            <li><strong>Dynamic PDF Reporting:</strong> Generates professional analytical reports with actionable tips for students.</li>
+        </ol>
+
+        <p>
+            The final system serves as a powerful decision-support tool for educators, enabling data-driven interventions that can significantly reduce student failure rates and improve overall institutional performance.
+        </p>
+
+        <div class="mt-5 text-center">
+            <a href="{{ url_for('upload_file') }}" class="btn btn-primary btn-lg rounded-pill px-5 py-3">
+                Access Prediction Dashboard
+            </a>
+        </div>
+    </article>
+</div>
+{% endblock %}

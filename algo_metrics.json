@@ -1,0 +1,70 @@
+{
+    "best_model": "SVM (RBF kernel)",
+    "selection_metric": "cv_mean_accuracy",
+    "metrics": {
+        "Logistic Regression": {
+            "test_accuracy": 0.5949367088607594,
+            "precision_pass": 0.7142857142857143,
+            "recall_pass": 0.660377358490566,
+            "f1_pass": 0.6862745098039216,
+            "cv_mean_accuracy": 0.6481012658227849,
+            "cv_std_accuracy": 0.05511782546095503
+        },
+        "SVM (linear kernel)": {
+            "test_accuracy": 0.5949367088607594,
+            "precision_pass": 0.723404255319149,
+            "recall_pass": 0.6415094339622641,
+            "f1_pass": 0.68,
+            "cv_mean_accuracy": 0.6531645569620254,
+            "cv_std_accuracy": 0.03358607382638381
+        },
+        "SVM (RBF kernel)": {
+            "test_accuracy": 0.6582278481012658,
+            "precision_pass": 0.7096774193548387,
+            "recall_pass": 0.8301886792452831,
+            "f1_pass": 0.7652173913043478,
+            "cv_mean_accuracy": 0.7012658227848101,
+            "cv_std_accuracy": 0.04500351603704096
+        },
+        "Random Forest": {
+            "test_accuracy": 0.6582278481012658,
+            "precision_pass": 0.6805555555555556,
+            "recall_pass": 0.9245283018867925,
+            "f1_pass": 0.784,
+            "cv_mean_accuracy": 0.6860759493670885,
+            "cv_std_accuracy": 0.029305916209595512
+        },
+        "XGBoost": {
+            "test_accuracy": 0.6962025316455697,
+            "precision_pass": 0.7230769230769231,
+            "recall_pass": 0.8867924528301887,
+            "f1_pass": 0.7966101694915254,
+            "cv_mean_accuracy": 0.6810126582278482,
+            "cv_std_accuracy": 0.05088544618289057
+        }
+    },
+    "confusion_matrix": [
+        [
+            8,
+            18
+        ],
+        [
+            9,
+            44
+        ]
+    ],
+    "confusion_matrix_normalized": [
+        [
+            0.3076923076923077,
+            0.6923076923076923
+        ],
+        [
+            0.16981132075471697,
+            0.8301886792452831
+        ]
+    ],
+    "confusion_labels": [
+        "Fail",
+        "Pass"
+    ]
+}
